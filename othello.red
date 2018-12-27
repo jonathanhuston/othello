@@ -66,7 +66,7 @@ flip-up: function [
     if end-row [
         current-row: row - 1
         while [current-row > end-row] [
-            board/:current-row/:col = player
+            board/:current-row/:col: player
             square-num: get-square-num current-row col
             square: get to-word rejoin ["square" form square-num]
             place-stone player square
@@ -95,7 +95,7 @@ flip-down: function [
     if end-row [
         current-row: row + 1
         while [current-row < end-row] [
-            board/:current-row/:col = player
+            board/:current-row/:col: player
             square-num: get-square-num current-row col
             square: get to-word rejoin ["square" form square-num]
             place-stone player square
@@ -124,7 +124,7 @@ flip-left: function [
     if end-col [
         current-col: col - 1
         while [current-col > end-col] [
-            board/:row/:current-col = player
+            board/:row/:current-col: player
             square-num: get-square-num row current-col
             square: get to-word rejoin ["square" form square-num]
             place-stone player square
@@ -153,7 +153,7 @@ flip-right: function [
     if end-col [
         current-col: col + 1
         while [current-col < end-col] [
-            board/:row/:current-col = player
+            board/:row/:current-col: player
             square-num: get-square-num row current-col
             square: get to-word rejoin ["square" form square-num]
             place-stone player square
