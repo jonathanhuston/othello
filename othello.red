@@ -8,8 +8,8 @@ Red [
 #include %/usr/local/lib/red/window.red
 
 EMPTY: load %empty.png
-DARK: load %dark.png 
-LIGHT: load %light.png
+PLAYER-1: load %black.png 
+PLAYER-2: load %red.png
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
 DELAY: 0.0
@@ -40,124 +40,53 @@ place-stone: function [
     player square
 ] [
     either (player = 1) [
-        square/image: DARK
+        square/image: PLAYER-1
     ] [
-        square/image: LIGHT
+        square/image: PLAYER-2
     ]
 ]
 
 
-flip-up: function [
-    "Given board, player, row, and column, flips up"
-    board player row col
+find-end: function [
+    "Finds end stone for flipping"
+    board player row col drow dcol
 ] [
-    find-up: does [
-        current-row: row - 2
-        while [current-row >= 1] [
-            if board/:current-row/:col = player [return current-row]
-            if board/:current-row/:col = 0 [return none]
-            current-row: current-row - 1
-        ]
-        return none
+    current-row: row + (2 * drow)
+    current-col: col + (2 * dcol)
+    forever [
+        if any [(current-row < 1) (current-row > 8) (current-col < 1) (current-col > 8)] [break]
+        stone: board/:current-row/:current-col
+        if stone = player [return reduce [current-row current-col]]
+        if stone = 0 [return reduce [none none]]
+        current-row: current-row + drow
+        current-col: current-col + dcol
     ]
-
-    if any [(row < 3) (board/(row - 1)/:col <> opponent player)] [exit]
-    end-row: find-up
-    if end-row [
-        current-row: row - 1
-        while [current-row > end-row] [
-            board/:current-row/:col: player
-            square-num: get-square-num current-row col
-            square: get to-word rejoin ["square" form square-num]
-            place-stone player square
-            current-row: current-row - 1
-        ]
-    ]
+    return reduce [none none]
 ]
 
 
-flip-down: function [
-    "Given board, player, row, and column, flips down"
-    board player row col
+flip-direction: function [
+    "Flips stones in a given direction"
+    board player row col drow dcol
 ] [
-    find-down: does [
-        current-row: row + 2
-        while [current-row <= 8] [
-            if board/:current-row/:col = player [return current-row]
-            if board/:current-row/:col = 0 [return none]
-            current-row: current-row + 1
-        ]
-        return none
-    ]
-
-    if any [(row > 6) (board/(row + 1)/:col <> opponent player)] [exit]
-    end-row: find-down
-    if end-row [
-        current-row: row + 1
-        while [current-row < end-row] [
-            board/:current-row/:col: player
-            square-num: get-square-num current-row col
-            square: get to-word rejoin ["square" form square-num]
+    if all [(drow = -1) (row < 3)] [exit]
+    if all [(drow = 1) (row > 6)] [exit]
+    if all [(dcol = -1) (col < 3)] [exit]
+    if all [(dcol = 1) (col > 6)] [exit]
+    if board/(row + drow)/(col + dcol) <> opponent player [exit]
+    end: find-end board player row col drow dcol
+    end-row: end/1
+    end-col: end/2
+    if all [end-row end-col] [
+        current-row: row + drow
+        current-col: col + dcol
+        forever [
+            if all [(current-row = end-row) (current-col = end-col)] [break]
+            board/:current-row/:current-col: player
+            square: get to-word rejoin ["square" form get-square-num current-row current-col]
             place-stone player square
-            current-row: current-row + 1
-        ]
-    ]
-]
-
-
-flip-left: function [
-    "Given board, player, row, and column, flips up"
-    board player row col
-] [
-    find-left: does [
-        current-col: col - 2
-        while [current-col >= 1] [
-            if board/:row/:current-col = player [return current-col]
-            if board/:row/:current-col = 0 [return none]
-            current-col: current-col - 1
-        ]
-        return none
-    ]
-
-    if any [(col < 3) (board/:row/(col - 1) <> opponent player)] [exit]
-    end-col: find-left
-    if end-col [
-        current-col: col - 1
-        while [current-col > end-col] [
-            board/:row/:current-col: player
-            square-num: get-square-num row current-col
-            square: get to-word rejoin ["square" form square-num]
-            place-stone player square
-            current-col: current-col - 1
-        ]
-    ]
-]
-
-
-flip-right: function [
-    "Given board, player, row, and column, flips up"
-    board player row col
-] [
-    find-right: does [
-        current-col: col + 2
-        while [current-col <= 8] [
-            if board/:row/:current-col = player [return current-col]
-            if board/:row/:current-col = 0 [return none]
-            current-col: current-col + 1
-        ]
-        return none
-    ]
-
-    if any [(col > 6) (board/:row/(col + 1) <> opponent player)] [exit]
-    end-col: find-right
-    if end-col [
-        current-col: col + 1
-        while [current-col < end-col] [
-            board/:row/:current-col: player
-            square-num: get-square-num row current-col
-            square: get to-word rejoin ["square" form square-num]
-            place-stone player square
-            current-col: current-col + 1
+            current-row: current-row + drow
+            current-col: current-col + dcol
         ]
     ]
 ]
@@ -167,10 +96,14 @@ flip: function [
     "Given board, player, row, and column, flips stones"
     board player row col
 ] [
-    flip-up board player row col
-    flip-down board player row col
-    flip-left board player row col
-    flip-right board player row col
+    flip-direction board player row col -1 0
+    flip-direction board player row col 1 0
+    flip-direction board player row col 0 -1
+    flip-direction board player row col 0 1
+    flip-direction board player row col -1 -1
+    flip-direction board player row col -1 1
+    flip-direction board player row col 1 -1
+    flip-direction board player row col 1 1
 ]
 
 
@@ -228,6 +161,7 @@ end-game: function [
     winning-line "Winning line, none if tie"
     player       "Last player"
 ] [
+    exit
     again/enabled?: true
     computer-move/enabled?: false
     dialogue/font/color: red
@@ -309,7 +243,8 @@ play-square: function [
         update-board board player square
         count: count + 1
         winning-line: winner? board player
-        either any [winning-line (count = 64)] [
+        either count = 60 [
+            print "aaargh"
             end-game winning-line player
         ] [
             player: next-player player
@@ -350,8 +285,8 @@ init-ttt: does [
     repeat square-num 64 [
         square-set-word: to-set-word rejoin ["square" form square-num ":"]
         init-square: EMPTY
-        if any [(square-num = 29) (square-num = 36)] [init-square: DARK]
-        if any [(square-num = 28) (square-num = 37)] [init-square: LIGHT]
+        if any [(square-num = 29) (square-num = 36)] [init-square: PLAYER-1]
+        if any [(square-num = 28) (square-num = 37)] [init-square: PLAYER-2]
         append ttt reduce [square-set-word 'button 82x82 init-square 'extra square-num [
             play-square face
             computer-move/extra: false  
