@@ -10,7 +10,7 @@ Red [
 EMPTY: load %empty.png
 STONE: reduce [(load %black.png) (load %red.png)]
 LABEL: ["Black: " "Red: "]
-LABEL-COLOR: reduce [black red]
+LABEL-COLOR: reduce [black red blue]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
 DELAY: 0.0
@@ -88,7 +88,7 @@ flip-direction: function [
             board/:current-row/:current-col: player
             count/:player: count/:player + 1
             count/(opponent player): count/(opponent player) - 1
-            square: get to-word rejoin ["square" form get-square-num current-row current-col]
+            square: get to-word rejoin ["square" get-square-num current-row current-col]
             square/image: STONE/:player
             current-row: current-row + drow
             current-col: current-col + dcol
@@ -127,6 +127,7 @@ valid-square?: function [
     "Given board, player, and square, determines if move is valid"
     board player square
 ] [
+    if square/image <> EMPTY [return false]
     move: get-row-col square
     row: move/1
     col: move/2
@@ -137,6 +138,19 @@ valid-square?: function [
         ]
     ]
     return false
+]
+
+
+find-valid-squares: function [
+    "Given board and player, returns array of valid squares"
+    board player
+] [
+    valid-squares: copy []
+    repeat square-num 64 [
+        square: get to-word rejoin ["square" square-num]
+        if valid-square? board player square [append valid-squares square-num]
+    ]
+    valid-squares
 ]
 
 
@@ -176,32 +190,21 @@ winner?: function [
 
 end-game: function [
     "Displays end-of-game dialogue"
-    winning-line "Winning line, none if tie"
-    player       "Last player"
 ] [
     again/enabled?: true
-    exit
     computer-move/enabled?: false
-    dialogue/font/color: red
-    either winning-line [
-        foreach square-num winning-line [
-            square: get to-word rejoin ["square" form square-num]
-            square/font/color: red
-        ]
-        dialogue/text: rejoin [WON/:player]
-    ] [
+    if count/1 > count/2 [
+        dialogue/font/color: LABEL-COLOR/1
+        dialogue/text: rejoin [WON/1]
+    ] 
+    if count/2 > count/1 [
+        dialogue/font/color: LABEL-COLOR/2
+        dialogue/text: rejoin [WON/2]
+    ]
+    if count/1 = count/2 [
+        dialogue/font/color: LABEL-COLOR/3
         dialogue/text: "It's a tie!"
     ]
-]
-
-
-find-empty-squares: function [
-    "Given board, returns array of empty square numbers"
-    board
-] [
-    empty-squares: copy []
-    repeat row 3 [repeat col 3 [if board/:row/:col = "" [append empty-squares get-square-num row col]]]
-    empty-squares
 ]
 
 
@@ -227,7 +230,7 @@ _minimax: function [
     depth       "current depth of analysis"
     alpha beta  "alpha and beta values for pruning"
 ] [
-    possible-moves: find-empty-squares board
+    possible-moves: find-valid-squares board player
     either maximizing [best-score: NINF] [best-score: INF]
     foreach move possible-moves [
         test-board: copy/deep board
@@ -257,13 +260,12 @@ play-square: function [
     square  
     /extern board player count
 ] [
-    if all [(square/image = EMPTY) (valid-square? board player square) (not again/enabled?)] [
+    if all [(valid-square? board player square) (not again/enabled?)] [
         update-board board player square
         count1/text: rejoin [LABEL/1 COUNT/1]
         count2/text: rejoin [LABEL/2 COUNT/2]
-        winning-line: winner? board player
         either count/1 + count/2 = 64 [
-            end-game winning-line player
+            end-game
         ] [
             player: next-player player
         ]
@@ -278,8 +280,9 @@ computer-turn: function [
     computer-move/enabled?: false
     view ttt
     forever [
-        move: first minimax board player count
-        square: get to-word rejoin ["square" form move]
+        ; move: first minimax board player count
+        move: random/only find-valid-squares board player
+        square: get to-word rejoin ["square" move]
         play-square square
         if count/:player > 1 [wait DELAY]
         if any [(not computer-move/extra) again/enabled?] [break]
@@ -299,14 +302,15 @@ init-ttt: does [
         return
         do [count1-text: rejoin [LABEL/1 COUNT/1]
             count2-text: rejoin [LABEL/2 COUNT/2]]
-        count1: text 564x30 font-color LABEL-COLOR/1 bold font-size 12 count1-text
-        count2: text 82x30 font-color LABEL-COLOR/2 bold font-size 12 count2-text
+        pad 252x0
+        count1: text 78x30 font-color LABEL-COLOR/1 bold font-size 12 count1-text
+        count2: text 78x30 font-color LABEL-COLOR/2 bold font-size 12 count2-text
         return
         space -5x-6
     ]
 
     repeat square-num 64 [
-        square-set-word: to-set-word rejoin ["square" form square-num ":"]
+        square-set-word: to-set-word rejoin ["square" square-num ":"]
         init-square: EMPTY
         if any [(square-num = 29) (square-num = 36)] [init-square: STONE/1]
         if any [(square-num = 28) (square-num = 37)] [init-square: STONE/2]
@@ -334,7 +338,7 @@ random/seed now/time
 forever [
     board: copy/deep init-board
     player: 1
-    count: [2 2]
+    count: copy [2 2]
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
