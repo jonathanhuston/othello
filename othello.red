@@ -270,11 +270,10 @@ minimax: function [
 play-square: function [
     "Places player's mark on selected square and checks for winner"
     square  
-    /extern board player count passed
+    /extern board player count
 ] [
     if all [(valid-square? board player square) (not again/enabled?)] [
         update-board board player square
-        passed: false
         count1/text: rejoin [LABEL/1 COUNT/1]
         count2/text: rejoin [LABEL/2 COUNT/2]
         either count/1 + count/2 = 64 [
@@ -282,11 +281,10 @@ play-square: function [
         ] [
             player: opponent player
             if empty? find-valid-squares board player [
-                either passed [
+                either empty? find-valid-squares board opponent player [
                     end-game
                 ] [
                     display-pass player
-                    passed: true
                     player: opponent player
                 ]
             ]
@@ -298,7 +296,7 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player count passed
+    /extern board player count
 ] [
     computer-move/enabled?: false
     view ttt
@@ -306,7 +304,7 @@ computer-turn: function [
         ; move: first minimax board player count
         move: random/only find-valid-squares board player
         square: get to-word rejoin ["square" move]
-        play-square square board player count passed
+        play-square square board player count
         wait DELAY
         if any [(not computer-move/extra) again/enabled?] [break]
         view ttt
@@ -365,7 +363,6 @@ forever [
     board: copy/deep init-board
     player: 1
     count: copy [2 2]
-    passed: false
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
