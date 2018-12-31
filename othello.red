@@ -10,10 +10,11 @@ Red [
 EMPTY: load %empty.png
 STONE: reduce [(load %black.png) (load %red.png)]
 LABEL: ["Black: " "Red: "]
-LABEL-COLOR: reduce [black red blue]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
+PLAYER-COLOR: reduce [black red blue]
 DELAY: 0.0
+PASS-DELAY: 1.5
 INF: 10
 NINF: -10
 
@@ -109,20 +110,6 @@ flip: function [
 ]
 
 
-update-board: function [
-    "Given board, player, and square, updates board"
-    board player square
-] [
-    move: get-row-col square
-    row: move/1
-    col: move/2
-    board/:row/:col: player
-    count/:player: count/:player + 1
-    square/image: STONE/:player
-    flip board player row col
-]
-
-
 valid-square?: function [
     "Given board, player, and square, determines if move is valid"
     board player square
@@ -154,17 +141,61 @@ find-valid-squares: function [
 ]
 
 
-next-player: function [
-    "Switches to next player, updating display"
-    player
+update-board: function [
+    "Given board, player, and square, updates board"
+    board player square
 ] [
-    player: opponent player
-    dialogue/font/color: LABEL-COLOR/:player
-    dialogue/text: rejoin [TURN/:player]
-    player
+    move: get-row-col square
+    row: move/1
+    col: move/2
+    board/:row/:col: player
+    count/:player: count/:player + 1
+    square/image: STONE/:player
+    flip board player row col
 ]
 
 
+display-player: function [
+    "Updates player display"
+    player
+] [
+    dialogue/font/color: PLAYER-COLOR/:player
+    dialogue/text: rejoin [TURN/:player]
+]
+
+
+display-pass: function [
+    "Forced pass on player's move"
+    player
+] [
+    dialogue/font/color: PLAYER-COLOR/:player
+    dialogue/text: "FORCED PASS"
+    view ttt
+    wait PASS-DELAY
+]
+
+
+end-game: function [
+    "Displays end-of-game dialogue"
+] [
+    again/enabled?: true
+    computer-move/enabled?: false
+    if count/1 > count/2 [
+        dialogue/font/color: PLAYER-COLOR/1
+        dialogue/text: rejoin [WON/1]
+    ] 
+    if count/2 > count/1 [
+        dialogue/font/color: PLAYER-COLOR/2
+        dialogue/text: rejoin [WON/2]
+    ]
+    if count/1 = count/2 [
+        dialogue/font/color: PLAYER-COLOR/3
+        dialogue/text: "It's a tie!"
+    ]
+]
+
+
+comment {
 winner?: function [
     "Given board, returns winning line if winner, else none"
     board   "Current board"
@@ -185,26 +216,6 @@ winner?: function [
     if all [(board/1/3 = player) (board/2/2 = player) (board/3/1 = player)] [append winning-line [3 5 7]]
     if winning-line = [] [winning-line: none]
     winning-line
-]
-
-
-end-game: function [
-    "Displays end-of-game dialogue"
-] [
-    again/enabled?: true
-    computer-move/enabled?: false
-    if count/1 > count/2 [
-        dialogue/font/color: LABEL-COLOR/1
-        dialogue/text: rejoin [WON/1]
-    ] 
-    if count/2 > count/1 [
-        dialogue/font/color: LABEL-COLOR/2
-        dialogue/text: rejoin [WON/2]
-    ]
-    if count/1 = count/2 [
-        dialogue/font/color: LABEL-COLOR/3
-        dialogue/text: "It's a tie!"
-    ]
 ]
 
 
@@ -253,21 +264,33 @@ minimax: function [
 ] [
     _minimax board player count true 0 NINF INF ; maximing depth alpha beta
 ]
+}
 
 
 play-square: function [
     "Places player's mark on selected square and checks for winner"
     square  
-    /extern board player count
+    /extern board player count passed
 ] [
     if all [(valid-square? board player square) (not again/enabled?)] [
         update-board board player square
+        passed: false
         count1/text: rejoin [LABEL/1 COUNT/1]
         count2/text: rejoin [LABEL/2 COUNT/2]
         either count/1 + count/2 = 64 [
             end-game
         ] [
-            player: next-player player
+            player: opponent player
+            if empty? find-valid-squares board player [
+                either passed [
+                    end-game
+                ] [
+                    display-pass player
+                    passed: true
+                    player: opponent player
+                ]
+            ]
+            display-player player
         ]
     ]
 ]
@@ -275,7 +298,7 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player count
+    /extern board player count passed
 ] [
     computer-move/enabled?: false
     view ttt
@@ -283,8 +306,8 @@ computer-turn: function [
         ; move: first minimax board player count
         move: random/only find-valid-squares board player
         square: get to-word rejoin ["square" move]
-        play-square square
-        if count/:player > 1 [wait DELAY]
+        play-square square board player count passed
+        wait DELAY
         if any [(not computer-move/extra) again/enabled?] [break]
         view ttt
     ]
@@ -298,13 +321,13 @@ init-ttt: does [
         backdrop white
         pad 5x0
         do [dialogue-text: rejoin [TURN/:player]]
-        dialogue: text 646x30 center font-color LABEL-COLOR/:player bold font-size 16 dialogue-text
+        dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
         do [count1-text: rejoin [LABEL/1 COUNT/1]
             count2-text: rejoin [LABEL/2 COUNT/2]]
         pad 252x0
-        count1: text 78x30 font-color LABEL-COLOR/1 bold font-size 12 count1-text
-        count2: text 78x30 font-color LABEL-COLOR/2 bold font-size 12 count2-text
+        count1: text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 count1-text
+        count2: text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 count2-text
         return
         space -5x-6
     ]
@@ -333,12 +356,16 @@ init-ttt: does [
     append ttt reduce ['button "Quit" [quit]]
 ]
 
-
+; 11:32:24  65
 random/seed now/time
 forever [
+    ; seed: now/time
+    ; random/seed seed
+    ; print seed
     board: copy/deep init-board
     player: 1
     count: copy [2 2]
+    passed: false
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
