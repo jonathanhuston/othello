@@ -155,7 +155,7 @@ update-board: function [
 ]
 
 
-display-player: function [
+player-dialogue: function [
     "Updates player display"
     player
 ] [
@@ -164,7 +164,7 @@ display-player: function [
 ]
 
 
-display-pass: function [
+pass-dialogue: function [
     "Forced pass on player's move"
     player
 ] [
@@ -284,11 +284,11 @@ play-square: function [
                 either empty? find-valid-squares board opponent player [
                     end-game
                 ] [
-                    display-pass player
+                    pass-dialogue player
                     player: opponent player
                 ]
             ]
-            display-player player
+            player-dialogue player
         ]
     ]
 ]
@@ -299,15 +299,14 @@ computer-turn: function [
     /extern board player count
 ] [
     computer-move/enabled?: false
-    view ttt
-    forever [
+    until [
         ; move: first minimax board player count
         move: random/only find-valid-squares board player
         square: get to-word rejoin ["square" move]
         play-square square board player count
-        wait DELAY
-        if any [(not computer-move/extra) again/enabled?] [break]
         view ttt
+        wait DELAY
+        any [(not computer-move/extra) again/enabled?]
     ]
     if (not again/enabled?) [computer-move/enabled?: true]
 ]
@@ -354,12 +353,9 @@ init-ttt: does [
     append ttt reduce ['button "Quit" [quit]]
 ]
 
-; 11:32:24  65
+
 random/seed now/time
 forever [
-    ; seed: now/time
-    ; random/seed seed
-    ; print seed
     board: copy/deep init-board
     player: 1
     count: copy [2 2]
