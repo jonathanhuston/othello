@@ -19,7 +19,7 @@ INF: 10
 NINF: -10
 
 ; internal representation of empty board
-init-board: [[0 0 0 0 0 0 0 0] 
+INIT-BOARD: [[0 0 0 0 0 0 0 0] 
              [0 0 0 0 0 0 0 0]
              [0 0 0 0 0 0 0 0]
              [0 0 0 2 1 0 0 0]
@@ -76,7 +76,7 @@ find-end: function [
 
 flip-direction: function [
     "Flips stones in a given direction"
-    board player row col drow dcol
+    board player count row col drow dcol
 ] [
     end: find-end board player row col drow dcol
     end-row: end/1
@@ -89,7 +89,7 @@ flip-direction: function [
             board/:current-row/:current-col: player
             count/:player: count/:player + 1
             count/(opponent player): count/(opponent player) - 1
-            square: get to-word rejoin ["square" get-square-num current-row current-col]
+            square: get to-word rejoin ["ttt-square" get-square-num current-row current-col]
             square/image: STONE/:player
             current-row: current-row + drow
             current-col: current-col + dcol
@@ -100,11 +100,11 @@ flip-direction: function [
 
 flip: function [
     "Given board, player, row, and column, flips stones"
-    board player row col
+    board player count row col
 ] [
     foreach drow [-1 0 1] [
         foreach dcol [-1 0 1] [
-            flip-direction board player row col drow dcol
+            flip-direction board player count row col drow dcol
         ]
     ]
 ]
@@ -134,7 +134,7 @@ find-valid-squares: function [
 ] [
     valid-squares: copy []
     repeat square-num 64 [
-        square: get to-word rejoin ["square" square-num]
+        square: get to-word rejoin ["ttt-square" square-num]
         if valid-square? board player square [append valid-squares square-num]
     ]
     valid-squares
@@ -143,7 +143,7 @@ find-valid-squares: function [
 
 update-board: function [
     "Given board, player, and square, updates board"
-    board player square
+    board player count square
 ] [
     move: get-row-col square
     row: move/1
@@ -151,7 +151,7 @@ update-board: function [
     board/:row/:col: player
     count/:player: count/:player + 1
     square/image: STONE/:player
-    flip board player row col
+    flip board player count row col
 ]
 
 
@@ -159,8 +159,8 @@ player-dialogue: function [
     "Updates player display"
     player
 ] [
-    dialogue/font/color: PLAYER-COLOR/:player
-    dialogue/text: rejoin [TURN/:player]
+    ttt-dialogue/font/color: PLAYER-COLOR/:player
+    ttt-dialogue/text: rejoin [TURN/:player]
 ]
 
 
@@ -168,8 +168,8 @@ pass-dialogue: function [
     "Forced pass on player's move"
     player
 ] [
-    dialogue/font/color: PLAYER-COLOR/:player
-    dialogue/text: "FORCED PASS"
+    ttt-dialogue/font/color: PLAYER-COLOR/:player
+    ttt-dialogue/text: "FORCED PASS"
     view ttt
     wait PASS-DELAY
 ]
@@ -177,20 +177,21 @@ pass-dialogue: function [
 
 end-game: function [
     "Displays end-of-game dialogue"
+    count
 ] [
-    again/enabled?: true
-    computer-move/enabled?: false
+    ttt-again/enabled?: true
+    ttt-computer-move/enabled?: false
     if count/1 > count/2 [
-        dialogue/font/color: PLAYER-COLOR/1
-        dialogue/text: rejoin [WON/1]
+        ttt-dialogue/font/color: PLAYER-COLOR/1
+        ttt-dialogue/text: rejoin [WON/1]
     ] 
     if count/2 > count/1 [
-        dialogue/font/color: PLAYER-COLOR/2
-        dialogue/text: rejoin [WON/2]
+        ttt-dialogue/font/color: PLAYER-COLOR/2
+        ttt-dialogue/text: rejoin [WON/2]
     ]
     if count/1 = count/2 [
-        dialogue/font/color: PLAYER-COLOR/3
-        dialogue/text: "It's a tie!"
+        ttt-dialogue/font/color: PLAYER-COLOR/3
+        ttt-dialogue/text: "It's a tie!"
     ]
 ]
 
@@ -272,17 +273,17 @@ play-square: function [
     square  
     /extern board player count
 ] [
-    if all [(valid-square? board player square) (not again/enabled?)] [
-        update-board board player square
-        count1/text: rejoin [LABEL/1 COUNT/1]
-        count2/text: rejoin [LABEL/2 COUNT/2]
+    if all [(valid-square? board player square) (not ttt-again/enabled?)] [
+        update-board board player count square
+        ttt-count1/text: rejoin [LABEL/1 COUNT/1]
+        ttt-count2/text: rejoin [LABEL/2 COUNT/2]
         either count/1 + count/2 = 64 [
-            end-game
+            end-game count
         ] [
             player: opponent player
             if empty? find-valid-squares board player [
                 either empty? find-valid-squares board opponent player [
-                    end-game
+                    end-game count
                 ] [
                     pass-dialogue player
                     player: opponent player
@@ -298,17 +299,17 @@ computer-turn: function [
     "Generates computer move"
     /extern board player count
 ] [
-    computer-move/enabled?: false
+    ttt-computer-move/enabled?: false
     until [
         ; move: first minimax board player count
         move: random/only find-valid-squares board player
-        square: get to-word rejoin ["square" move]
-        play-square square board player count
+        square: get to-word rejoin ["ttt-square" move]
+        play-square square
         view ttt
         wait DELAY
-        any [(not computer-move/extra) again/enabled?]
+        any [(not ttt-computer-move/extra) ttt-again/enabled?]
     ]
-    if (not again/enabled?) [computer-move/enabled?: true]
+    if (not ttt-again/enabled?) [ttt-computer-move/enabled?: true]
 ]
 
 
@@ -318,36 +319,36 @@ init-ttt: does [
         backdrop white
         pad 5x0
         do [dialogue-text: rejoin [TURN/:player]]
-        dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
+        ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
         do [count1-text: rejoin [LABEL/1 COUNT/1]
             count2-text: rejoin [LABEL/2 COUNT/2]]
         pad 252x0
-        count1: text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 count1-text
-        count2: text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 count2-text
+        ttt-count1: text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 count1-text
+        ttt-count2: text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 count2-text
         return
         space -5x-6
     ]
 
     repeat square-num 64 [
-        square-set-word: to-set-word rejoin ["square" square-num ":"]
+        square-set-word: to-set-word rejoin ["ttt-square" square-num ":"]
         init-square: EMPTY
         if any [(square-num = 29) (square-num = 36)] [init-square: STONE/1]
         if any [(square-num = 28) (square-num = 37)] [init-square: STONE/2]
         append ttt reduce [square-set-word 'button 82x82 init-square 'extra square-num [
             play-square face
-            computer-move/extra: false  
+            ttt-computer-move/extra: false  
         ]]
         if square-num % 8 = 0 [append ttt 'return]
     ]
 
     append ttt reduce ['pad -4x10]
 
-    append ttt reduce [to-set-word "computer-move" 'button "Computer Move" 'extra false [if face/enabled? [
+    append ttt reduce [to-set-word "ttt-computer-move" 'button "Computer Move" 'extra false [if face/enabled? [
         computer-turn
-        computer-move/extra: true
+        ttt-computer-move/extra: true
     ]]]
-    append ttt reduce [to-set-word "again" 'button 'disabled "Again?" [if face/enabled? [window.update face unview]]
+    append ttt reduce [to-set-word "ttt-again" 'button 'disabled "Again?" [if face/enabled? [window.update face unview]]
     
     ]
     append ttt reduce ['button "Quit" [quit]]
@@ -356,7 +357,7 @@ init-ttt: does [
 
 random/seed now/time
 forever [
-    board: copy/deep init-board
+    board: copy/deep INIT-BOARD
     player: 1
     count: copy [2 2]
     ttt: layout init-ttt
