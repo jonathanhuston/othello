@@ -159,7 +159,7 @@ player-dialogue: function [
     "Updates player display"
     player
 ] [
-    dialogue/font/color: PLAYER-COLOR/:player
+    dialogue/color: PLAYER-COLOR/:player
     dialogue/text: rejoin [TURN/:player]
 ]
 
@@ -168,7 +168,7 @@ pass-dialogue: function [
     "Forced pass on player's move"
     player
 ] [
-    dialogue/font/color: PLAYER-COLOR/:player
+    dialogue/color: PLAYER-COLOR/:player
     dialogue/text: "FORCED PASS"
     wait PASS-DELAY
 ]
@@ -183,15 +183,15 @@ end-game: function [
     game-over?: true
     computer-move/enabled?: false
     if count/1 > count/2 [
-        dialogue/font/color: PLAYER-COLOR/1
+        dialogue/color: PLAYER-COLOR/1
         dialogue/text: rejoin [WON/1]
     ] 
     if count/2 > count/1 [
-        dialogue/font/color: PLAYER-COLOR/2
+        dialogue/color: PLAYER-COLOR/2
         dialogue/text: rejoin [WON/2]
     ]
     if count/1 = count/2 [
-        dialogue/font/color: PLAYER-COLOR/3
+        dialogue/color: PLAYER-COLOR/3
         dialogue/text: "It's a tie!"
     ]
 ]
@@ -314,7 +314,7 @@ init-ttt: has [
         title "Othello"
         backdrop white
         pad 5x0
-        dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 (TURN/:player)
+        text 646x30 center bold font-size 16 react [face/text: dialogue/text face/font/color: dialogue/color]
         return
         pad 252x0
         text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/count/1]]
@@ -366,6 +366,7 @@ forever [
     board: copy/deep INIT-BOARD
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
+    dialogue: make reactor! [text: TURN/:player color: PLAYER-COLOR/:player]
     previous-move-by-computer?: false
     game-over?: false
     view/options init-ttt [offset: window.offset]
