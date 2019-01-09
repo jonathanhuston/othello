@@ -76,7 +76,7 @@ find-end: function [
 
 flip-direction: function [
     "Flips stones in a given direction"
-    board player count row col drow dcol
+    board player counter row col drow dcol
 ] [
     end: find-end board player row col drow dcol
     end-row: end/1
@@ -87,8 +87,8 @@ flip-direction: function [
         forever [
             if all [(current-row = end-row) (current-col = end-col)] [break]
             board/:current-row/:current-col: player
-            count/:player: count/:player + 1
-            count/(opponent player): count/(opponent player) - 1
+            counter/count/:player: counter/count/:player + 1
+            counter/count/(opponent player): counter/count/(opponent player) - 1
             square: get to-word rejoin ["ttt-square" get-square-num current-row current-col]
             square/image: STONE/:player
             current-row: current-row + drow
@@ -100,11 +100,11 @@ flip-direction: function [
 
 flip: function [
     "Given board, player, row, and column, flips stones"
-    board player count row col
+    board player counter row col
 ] [
     foreach drow [-1 0 1] [
         foreach dcol [-1 0 1] [
-            flip-direction board player count row col drow dcol
+            flip-direction board player counter row col drow dcol
         ]
     ]
 ]
@@ -143,15 +143,15 @@ find-valid-squares: function [
 
 update-board: function [
     "Given board, player, and square, updates board"
-    board player count square
+    board player counter square
 ] [
     move: get-row-col square
     row: move/1
     col: move/2
     board/:row/:col: player
-    count/:player: count/:player + 1
+    counter/count/:player: counter/count/:player + 1
     square/image: STONE/:player
-    flip board player count row col
+    flip board player counter row col
 ]
 
 
@@ -176,19 +176,19 @@ pass-dialogue: function [
 
 end-game: function [
     "Displays end-of-game dialogue"
-    count
+    counter
 ] [
     ttt-again/enabled?: true
     ttt-computer-move/enabled?: false
-    if count/1 > count/2 [
+    if counter/count/1 > counter/count/2 [
         ttt-dialogue/font/color: PLAYER-COLOR/1
         ttt-dialogue/text: rejoin [WON/1]
     ] 
-    if count/2 > count/1 [
+    if counter/count/2 > counter/count/1 [
         ttt-dialogue/font/color: PLAYER-COLOR/2
         ttt-dialogue/text: rejoin [WON/2]
     ]
-    if count/1 = count/2 [
+    if counter/count/1 = counter/count/2 [
         ttt-dialogue/font/color: PLAYER-COLOR/3
         ttt-dialogue/text: "It's a tie!"
     ]
@@ -270,19 +270,17 @@ minimax: function [
 play-square: function [
     "Places player's mark on selected square and checks for winner"
     square  
-    /extern board player count
+    /extern board player counter
 ] [
     if all [(valid-square? board player square) (not ttt-again/enabled?)] [
-        update-board board player count square
-        counter/one: count/1
-        counter/two: count/2
-        either count/1 + count/2 = 64 [
-            end-game count
+        update-board board player counter square
+        either counter/count/1 + counter/count/2 = 64 [
+            end-game counter
         ] [
             player: opponent player
             if empty? find-valid-squares board player [
                 either empty? find-valid-squares board opponent player [
-                    end-game count
+                    end-game counter
                 ] [
                     pass-dialogue player
                     player: opponent player
@@ -296,7 +294,7 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player count
+    /extern board player counter
 ] [
     ttt-computer-move/enabled?: false
     until [
@@ -321,8 +319,8 @@ init-ttt: does [
         ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
         pad 252x0
-        text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/one]]
-        text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 react [face/text: rejoin [LABEL/2 counter/two]]
+        text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/count/1]]
+        text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 react [face/text: rejoin [LABEL/2 counter/count/2]]
         return
         space -5x-6
     ]
@@ -361,8 +359,7 @@ random/seed now/time
 forever [
     board: copy/deep INIT-BOARD
     player: 1
-    count: copy [2 2]
-    counter: make reactor! [one: count/1 two: count/2]
+    counter: make deep-reactor! [count: copy [2 2]]
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
