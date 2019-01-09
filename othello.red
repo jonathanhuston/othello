@@ -177,10 +177,9 @@ pass-dialogue: function [
 end-game: function [
     "Displays end-of-game dialogue"
     count
-    /extern game-over?
+    /extern game?
 ] [
-    again/enabled?: true
-    game-over?: true
+    game?/over?: true
     computer-move/enabled?: false
     if count/1 > count/2 [
         dialogue/color: PLAYER-COLOR/1
@@ -272,9 +271,9 @@ minimax: function [
 play-square: function [
     "Places player's mark on selected square and checks for winner"
     square  
-    /extern board player counter game-over?
+    /extern board player counter game?
 ] [
-    if all [(valid-square? board player square) (not game-over?)] [
+    if all [(valid-square? board player square) (not game?/over?)] [
         update-board board player counter/count square
         either counter/count/1 + counter/count/2 = 64 [
             end-game counter/count
@@ -296,14 +295,14 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player game-over? previous-move-by-computer?
+    /extern board player game? previous-move-by-computer?
 ] [
     computer-move/enabled?: false
     move: random/only find-valid-squares board player
     square: get to-word rejoin ["square" move]
     play-square square
     wait DELAY 
-    if (not game-over?) and (not previous-move-by-computer?) [computer-move/enabled?: true]
+    if (not game?/over?) and (not previous-move-by-computer?) [computer-move/enabled?: true]
 ]
 
 
@@ -344,14 +343,14 @@ init-ttt: has [
                 computer-turn
                 if previous-move-by-computer? [
                     forever [
-                        if game-over? [break]
+                        if game?/over? [break]
                         computer-turn
                     ]
                 ]
                 previous-move-by-computer?: true
             ]
         ]
-        again: button disabled "Again?" [
+        again: button "Again?" react [face/enabled?: game?/over?] [
             if face/enabled? [
                 window.update face unview
             ]
@@ -368,6 +367,6 @@ forever [
     counter: make deep-reactor! [count: copy [2 2]]
     dialogue: make reactor! [text: TURN/:player color: PLAYER-COLOR/:player]
     previous-move-by-computer?: false
-    game-over?: false
+    game?: make reactor! [over?: false]
     view/options init-ttt [offset: window.offset]
 ]
