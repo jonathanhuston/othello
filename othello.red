@@ -2,7 +2,7 @@ Red [
     Title:  "Othello"
     Author: "Jonathan Huston"
     Needs:  View
-    Deps:   Red 0.6.3
+    Deps:   Red 0.6.4
 ]
 
 #include %/usr/local/lib/red/window.red
@@ -13,7 +13,7 @@ LABEL: ["Black: " "Red: "]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
 PLAYER-COLOR: reduce [black red blue]
-DELAY: 0.5
+DELAY: 0.0
 PASS-DELAY: 1.5
 INF: 10
 NINF: -10
@@ -170,7 +170,6 @@ pass-dialogue: function [
 ] [
     ttt-dialogue/font/color: PLAYER-COLOR/:player
     ttt-dialogue/text: "FORCED PASS"
-    view ttt
     wait PASS-DELAY
 ]
 
@@ -305,7 +304,6 @@ computer-turn: function [
         move: random/only find-valid-squares board player
         square: get to-word rejoin ["ttt-square" move]
         play-square square
-        view ttt
         wait DELAY
         (not ttt-computer-move/extra) or ttt-again/enabled?
     ]
