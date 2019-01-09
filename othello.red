@@ -275,8 +275,8 @@ play-square: function [
 ] [
     if all [(valid-square? board player square) (not ttt-again/enabled?)] [
         update-board board player count square
-        ttt-count1/text: rejoin [LABEL/1 COUNT/1]
-        ttt-count2/text: rejoin [LABEL/2 COUNT/2]
+        actual-count/one: count/1
+        actual-count/two: count/2
         either count/1 + count/2 = 64 [
             end-game count
         ] [
@@ -315,8 +315,6 @@ computer-turn: function [
 
 init-ttt: does [
     dialogue-text: TURN/:player
-    count1-text: rejoin [LABEL/1 count/1]
-    count2-text: rejoin [LABEL/2 count/2]
     
     ttt: copy [ 
         title "Othello"
@@ -325,8 +323,8 @@ init-ttt: does [
         ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
         pad 252x0
-        ttt-count1: text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 count1-text
-        ttt-count2: text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 count2-text
+        text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 actual-count/one]]
+        text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 react [face/text: rejoin [LABEL/2 actual-count/two]]
         return
         space -5x-6
     ]
@@ -366,6 +364,7 @@ forever [
     board: copy/deep INIT-BOARD
     player: 1
     count: copy [2 2]
+    actual-count: make reactor! [one: count/1 two: count/2]
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
