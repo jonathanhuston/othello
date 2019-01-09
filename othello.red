@@ -177,8 +177,10 @@ pass-dialogue: function [
 end-game: function [
     "Displays end-of-game dialogue"
     count
+    /extern game-over?
 ] [
     again/enabled?: true
+    game-over?: true
     computer-move/enabled?: false
     if count/1 > count/2 [
         dialogue/font/color: PLAYER-COLOR/1
@@ -270,9 +272,9 @@ minimax: function [
 play-square: function [
     "Places player's mark on selected square and checks for winner"
     square  
-    /extern board player counter
+    /extern board player counter game-over?
 ] [
-    if all [(valid-square? board player square) (not again/enabled?)] [
+    if all [(valid-square? board player square) (not game-over?)] [
         update-board board player counter/count square
         either counter/count/1 + counter/count/2 = 64 [
             end-game counter/count
@@ -294,18 +296,14 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player
+    /extern board player game-over? previous-move-by-computer?
 ] [
     computer-move/enabled?: false
-    until [
-        ; move: first minimax board player count
-        move: random/only find-valid-squares board player
-        square: get to-word rejoin ["square" move]
-        play-square square
-        wait DELAY
-        (not computer-move/extra) or again/enabled?
-    ]
-    if (not again/enabled?) [computer-move/enabled?: true]
+    move: random/only find-valid-squares board player
+    square: get to-word rejoin ["square" move]
+    play-square square
+    wait DELAY 
+    if (not game-over?) and (not previous-move-by-computer?) [computer-move/enabled?: true]
 ]
 
 
@@ -333,7 +331,7 @@ init-ttt: has [
         append ttt compose/deep [
             (square-set-word) button 82x82 (init-square) extra (square-num) [
                 play-square face
-                computer-move/extra: false  
+                previous-move-by-computer?: false  
             ]
         ]
         if square-num % 8 = 0 [append ttt [return]]
@@ -341,10 +339,16 @@ init-ttt: has [
 
     append ttt [
         pad -4x10
-        computer-move: button "Computer Move" extra false [
+        computer-move: button "Computer Move" [
             if face/enabled? [
                 computer-turn
-                face/extra: true
+                if previous-move-by-computer? [
+                    forever [
+                        if game-over? [break]
+                        computer-turn
+                    ]
+                ]
+                previous-move-by-computer?: true
             ]
         ]
         again: button disabled "Again?" [
@@ -362,5 +366,7 @@ forever [
     board: copy/deep INIT-BOARD
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
-    view/options compose/deep init-ttt [offset: window.offset]
+    previous-move-by-computer?: false
+    game-over?: false
+    view/options init-ttt [offset: window.offset]
 ]
