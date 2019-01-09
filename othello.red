@@ -309,14 +309,15 @@ computer-turn: function [
 ]
 
 
-init-ttt: does [
-    dialogue-text: TURN/:player
-    
+init-ttt: has [
+    "Initializes GUI"
+    init-square
+] [    
     ttt: copy [ 
         title "Othello"
         backdrop white
         pad 5x0
-        ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
+        ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 ""
         return
         pad 252x0
         text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/count/1]]
@@ -361,5 +362,6 @@ forever [
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
     ttt: layout init-ttt
+    ttt-dialogue/text: TURN/:player
     view/options ttt [offset: window.offset]
 ]
