@@ -330,11 +330,13 @@ init-ttt: has [
         init-square: EMPTY
         if any [(square-num = 29) (square-num = 36)] [init-square: STONE/1]
         if any [(square-num = 28) (square-num = 37)] [init-square: STONE/2]
-        append ttt reduce [square-set-word 'button 82x82 init-square 'extra square-num [
-            play-square face
-            computer-move/extra: false  
-        ]]
-        if square-num % 8 = 0 [append ttt 'return]
+        append ttt compose/deep [
+            (square-set-word) button 82x82 (init-square) extra (square-num) [
+                play-square face
+                computer-move/extra: false  
+            ]
+        ]
+        if square-num % 8 = 0 [append ttt [return]]
     ]
 
     append ttt [
@@ -360,5 +362,5 @@ forever [
     board: copy/deep INIT-BOARD
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
-    view/options init-ttt [offset: window.offset]
+    view/options compose/deep init-ttt [offset: window.offset]
 ]
