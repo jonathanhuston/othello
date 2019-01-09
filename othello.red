@@ -13,7 +13,7 @@ LABEL: ["Black: " "Red: "]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
 PLAYER-COLOR: reduce [black red blue]
-DELAY: 0.0
+DELAY: 0.5
 PASS-DELAY: 1.5
 INF: 10
 NINF: -10
@@ -275,8 +275,8 @@ play-square: function [
 ] [
     if all [(valid-square? board player square) (not ttt-again/enabled?)] [
         update-board board player count square
-        actual-count/one: count/1
-        actual-count/two: count/2
+        counter/one: count/1
+        counter/two: count/2
         either count/1 + count/2 = 64 [
             end-game count
         ] [
@@ -307,7 +307,7 @@ computer-turn: function [
         play-square square
         view ttt
         wait DELAY
-        any [(not ttt-computer-move/extra) ttt-again/enabled?]
+        (not ttt-computer-move/extra) or ttt-again/enabled?
     ]
     if (not ttt-again/enabled?) [ttt-computer-move/enabled?: true]
 ]
@@ -323,8 +323,8 @@ init-ttt: does [
         ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
         pad 252x0
-        text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 actual-count/one]]
-        text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 react [face/text: rejoin [LABEL/2 actual-count/two]]
+        text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/one]]
+        text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 react [face/text: rejoin [LABEL/2 counter/two]]
         return
         space -5x-6
     ]
@@ -346,7 +346,7 @@ init-ttt: does [
         ttt-computer-move: button "Computer Move" extra false [
             if face/enabled? [
                 computer-turn
-                ttt-computer-move/extra: true
+                face/extra: true
             ]
         ]
         ttt-again: button disabled "Again?" [
@@ -364,7 +364,7 @@ forever [
     board: copy/deep INIT-BOARD
     player: 1
     count: copy [2 2]
-    actual-count: make reactor! [one: count/1 two: count/2]
+    counter: make reactor! [one: count/1 two: count/2]
     ttt: layout init-ttt
     view/options ttt [offset: window.offset]
 ]
