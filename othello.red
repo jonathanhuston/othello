@@ -314,15 +314,16 @@ computer-turn: function [
 
 
 init-ttt: does [
+    dialogue-text: TURN/:player
+    count1-text: rejoin [LABEL/1 count/1]
+    count2-text: rejoin [LABEL/2 count/2]
+    
     ttt: copy [ 
         title "Othello"
         backdrop white
         pad 5x0
-        do [dialogue-text: rejoin [TURN/:player]]
         ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 dialogue-text
         return
-        do [count1-text: rejoin [LABEL/1 COUNT/1]
-            count2-text: rejoin [LABEL/2 COUNT/2]]
         pad 252x0
         ttt-count1: text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 count1-text
         ttt-count2: text 78x30 font-color PLAYER-COLOR/2 bold font-size 12 count2-text
@@ -342,16 +343,21 @@ init-ttt: does [
         if square-num % 8 = 0 [append ttt 'return]
     ]
 
-    append ttt reduce ['pad -4x10]
-
-    append ttt reduce [to-set-word "ttt-computer-move" 'button "Computer Move" 'extra false [if face/enabled? [
-        computer-turn
-        ttt-computer-move/extra: true
-    ]]]
-    append ttt reduce [to-set-word "ttt-again" 'button 'disabled "Again?" [if face/enabled? [window.update face unview]]
-    
+    append ttt [
+        pad -4x10
+        ttt-computer-move: button "Computer Move" extra false [
+            if face/enabled? [
+                computer-turn
+                ttt-computer-move/extra: true
+            ]
+        ]
+        ttt-again: button disabled "Again?" [
+            if face/enabled? [
+                window.update face unview
+            ]
+        ]
+        button "Quit" [quit]
     ]
-    append ttt reduce ['button "Quit" [quit]]
 ]
 
 
