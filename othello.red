@@ -317,7 +317,7 @@ init-ttt: has [
         title "Othello"
         backdrop white
         pad 5x0
-        ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16 ""
+        ttt-dialogue: text 646x30 center font-color PLAYER-COLOR/:player bold font-size 16
         return
         pad 252x0
         text 78x30 font-color PLAYER-COLOR/1 bold font-size 12 react [face/text: rejoin [LABEL/1 counter/count/1]]
