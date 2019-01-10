@@ -7,7 +7,7 @@ Red [
 
 #include %/usr/local/lib/red/window.red
 
-STONE: reduce [(load %empty.png) (load %black.png) (load %red.png)]
+STONE: reduce [(load %black.png) (load %red.png) (load %empty.png)]
 LABEL: ["Black: " "Red: "]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
@@ -18,14 +18,14 @@ INF: 10
 NINF: -10
 
 ; internal representation of empty board
-INIT-BOARD: [[0 0 0 0 0 0 0 0] 
-             [0 0 0 0 0 0 0 0]
-             [0 0 0 0 0 0 0 0]
-             [0 0 0 2 1 0 0 0]
-             [0 0 0 1 2 0 0 0]
-             [0 0 0 0 0 0 0 0]
-             [0 0 0 0 0 0 0 0]
-             [0 0 0 0 0 0 0 0]]
+INIT-BOARD: [[3 3 3 3 3 3 3 3] 
+             [3 3 3 3 3 3 3 3]
+             [3 3 3 3 3 3 3 3]
+             [3 3 3 2 1 3 3 3]
+             [3 3 3 1 2 3 3 3]
+             [3 3 3 3 3 3 3 3]
+             [3 3 3 3 3 3 3 3]
+             [3 3 3 3 3 3 3 3]]
 
 
 opponent: function [player] [3 - player]
@@ -46,7 +46,7 @@ find-end: function [
         if any [(current-row < 1) (current-row > 8) (current-col < 1) (current-col > 8)] [break]
         square: board/square/:current-row/:current-col
         if square = player [return reduce [current-row current-col]]
-        if square = 0 [return reduce [none none]]
+        if square = 3 [return reduce [none none]]
         current-row: current-row + drow
         current-col: current-col + dcol
     ]
@@ -92,7 +92,7 @@ valid-square?: function [
     "Given board, player, row, and column, determines if move is valid"
     board player row col
 ] [
-    if board/square/:row/:col <> 0 [return false]
+    if board/square/:row/:col <> 3 [return false]
     foreach drow [-1 0 1] [
         foreach dcol [-1 0 1] [
             end: find-end board player row col drow dcol
@@ -205,7 +205,7 @@ computer-turn: function [
 ]
 
 
-init-ttt: has [row col] [
+init-ttt: does [
     ttt: copy [ 
         title "Othello"
         backdrop white
@@ -222,7 +222,7 @@ init-ttt: has [row col] [
     repeat row 8 [
         repeat col 8 [
             append ttt compose/deep [
-                button 82x82 extra [(row) (col)] react [face/image: STONE/((board/square/(face/extra/1)/(face/extra/2)) + 1)] [
+                button 82x82 extra [(row) (col)] react [face/image: STONE/(board/square/(face/extra/1)/(face/extra/2))] [
                     play-square face/extra/1 face/extra/2
                     previous-move-by-computer?: false  
                 ]
@@ -257,6 +257,7 @@ init-ttt: has [row col] [
 
 random/seed now/time
 forever [
+    ; system/view/debug?: true
     board: make deep-reactor! [square: copy/deep INIT-BOARD]
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
