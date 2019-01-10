@@ -221,12 +221,13 @@ init-ttt: does [
 
     repeat row 8 [
         repeat col 8 [
-            append ttt compose/deep [
-                button 82x82 extra [(row) (col)] react [face/image: STONE/(board/square/(face/extra/1)/(face/extra/2))] [
-                    play-square face/extra/1 face/extra/2
+            sq: rejoin [{[
+                    button 82x82 extra [} row { } col {] react [
+                        face/image: STONE/(board/square/} row {/} col {)] [
+                    play-square } row { } col { } {
                     previous-move-by-computer?: false  
-                ]
-            ]
+                ]]}]
+            append ttt load sq
         ]
         append ttt [return]
     ]
@@ -257,7 +258,6 @@ init-ttt: does [
 
 random/seed now/time
 forever [
-    ; system/view/debug?: true
     board: make deep-reactor! [square: copy/deep INIT-BOARD]
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
