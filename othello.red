@@ -205,7 +205,7 @@ computer-turn: function [
 ]
 
 
-init-ttt: does [
+init-ttt: has [row col] [
     ttt: copy [ 
         title "Othello"
         backdrop white
@@ -222,11 +222,11 @@ init-ttt: does [
     repeat row 8 [
         repeat col 8 [
             sq: rejoin [{[
-                    button 82x82 extra [} row { } col {] react [
-                        face/image: STONE/(board/square/} row {/} col {)] [
-                    play-square } row { } col { } {
-                    previous-move-by-computer?: false  
-                ]]}]
+                    button 82x82 react [face/image: STONE/(board/square/} row {/} col {)] [
+                        play-square } row { } col { } {
+                        previous-move-by-computer?: false
+                    ] 
+                ]}]
             append ttt load sq
         ]
         append ttt [return]
