@@ -7,8 +7,7 @@ Red [
 
 #include %/usr/local/lib/red/window.red
 
-EMPTY: load %empty.png
-STONE: reduce [(load %black.png) (load %red.png)]
+STONE: reduce [(load %empty.png) (load %black.png) (load %red.png)]
 LABEL: ["Black: " "Red: "]
 TURN: ["Black's turn" "Red's turn"]
 WON: ["Black won!" "Red won!"]
@@ -29,25 +28,6 @@ INIT-BOARD: [[0 0 0 0 0 0 0 0]
              [0 0 0 0 0 0 0 0]]
 
 
-get-square-num: function [
-    "Given row and column, returns square number"
-    row col
-] [
-    (row - 1) * 8 + col
-]
-
-
-get-row-col: function [
-    "Given square, returns row and column"
-    square
-] [
-    move: square/extra
-    col: (move - 1) % 8 + 1
-    row: (move - 1) / 8 + 1
-    return reduce [row col]
-]
-
-
 opponent: function [player] [3 - player]
 
 
@@ -59,14 +39,14 @@ find-end: function [
     if all [(drow = 1) (row > 6)] [return reduce [none none]]
     if all [(dcol = -1) (col < 3)] [return reduce [none none]]
     if all [(dcol = 1) (col > 6)] [return reduce [none none]]
-    if board/(row + drow)/(col + dcol) <> opponent player [return reduce [none none]]
+    if board/square/(row + drow)/(col + dcol) <> opponent player [return reduce [none none]]
     current-row: row + (2 * drow)
     current-col: col + (2 * dcol)
     forever [
         if any [(current-row < 1) (current-row > 8) (current-col < 1) (current-col > 8)] [break]
-        stone: board/:current-row/:current-col
-        if stone = player [return reduce [current-row current-col]]
-        if stone = 0 [return reduce [none none]]
+        square: board/square/:current-row/:current-col
+        if square = player [return reduce [current-row current-col]]
+        if square = 0 [return reduce [none none]]
         current-row: current-row + drow
         current-col: current-col + dcol
     ]
@@ -86,11 +66,9 @@ flip-direction: function [
         current-col: col + dcol
         forever [
             if all [(current-row = end-row) (current-col = end-col)] [break]
-            board/:current-row/:current-col: player
+            board/square/:current-row/:current-col: player
             count/:player: count/:player + 1
             count/(opponent player): count/(opponent player) - 1
-            square: get to-word rejoin ["square" get-square-num current-row current-col]
-            square/image: STONE/:player
             current-row: current-row + drow
             current-col: current-col + dcol
         ]
@@ -111,13 +89,10 @@ flip: function [
 
 
 valid-square?: function [
-    "Given board, player, and square, determines if move is valid"
-    board player square
+    "Given board, player, row, and column, determines if move is valid"
+    board player row col
 ] [
-    if square/image <> EMPTY [return false]
-    move: get-row-col square
-    row: move/1
-    col: move/2
+    if board/square/:row/:col <> 0 [return false]
     foreach drow [-1 0 1] [
         foreach dcol [-1 0 1] [
             end: find-end board player row col drow dcol
@@ -133,24 +108,21 @@ find-valid-squares: function [
     board player
 ] [
     valid-squares: copy []
-    repeat square-num 64 [
-        square: get to-word rejoin ["square" square-num]
-        if valid-square? board player square [append valid-squares square-num]
+    repeat row 8 [
+        repeat col 8 [
+            if valid-square? board player row col [append/only valid-squares reduce [row col]]
+        ]
+        valid-squares
     ]
-    valid-squares
 ]
 
 
 update-board: function [
-    "Given board, player, and square, updates board"
-    board player count square
+    "Given board, player, count, row, and column, updates board"
+    board player count row col
 ] [
-    move: get-row-col square
-    row: move/1
-    col: move/2
-    board/:row/:col: player
+    board/square/:row/:col: player
     count/:player: count/:player + 1
-    square/image: STONE/:player
     flip board player count row col
 ]
 
@@ -196,85 +168,13 @@ end-game: function [
 ]
 
 
-comment {
-winner?: function [
-    "Given board, returns winning line if winner, else none"
-    board   "Current board"
-    player  "Current player"
-] [
-    winning-line: copy []
-    repeat row 3 [
-        if all [(board/:row/1 = player) (board/:row/2 = player) (board/:row/3 = player)] [
-            append winning-line reduce [get-square-num row 1 get-square-num row 2 get-square-num row 3]
-        ]
-    ]
-    repeat col 3 [
-        if all [(board/1/:col = player) (board/2/:col = player) (board/3/:col = player)] [
-            append winning-line reduce [get-square-num 1 col get-square-num 2 col get-square-num 3 col]
-        ]
-    ]
-    if all [(board/1/1 = player) (board/2/2 = player) (board/3/3 = player)] [append winning-line [1 5 9]]
-    if all [(board/1/3 = player) (board/2/2 = player) (board/3/1 = player)] [append winning-line [3 5 7]]
-    if winning-line = [] [winning-line: none]
-    winning-line
-]
-
-
-evaluate: function [
-    "Generates score for a given board"
-    board player count 
-    maximizing  "is this the maximizing player?"
-    depth       "current depth of analysis"
-    alpha beta  "alpha and beta values for pruning"
-] [
-    either maximizing [win: 1] [win: -1]
-    if depth < 3 [win: win * 2]    ; choose sudden death over extended agony
-    if winner? board player [return win]
-    if count/1 = 9 [return 0]
-    score: second _minimax board (opponent player) count (not maximizing) depth alpha beta
-]
-
-
-_minimax: function [
-    "Minimax helper function"
-    board player count 
-    maximizing  "is this the maximizing player?"
-    depth       "current depth of analysis"
-    alpha beta  "alpha and beta values for pruning"
-] [
-    possible-moves: find-valid-squares board player
-    either maximizing [best-score: NINF] [best-score: INF]
-    foreach move possible-moves [
-        test-board: copy/deep board
-        update-board test-board player move
-        score: evaluate test-board player (count/1 + 1) maximizing (depth + 1) alpha beta
-        if any [all [maximizing (score > best-score)] all [(not maximizing) (score < best-score)]] [
-            best-move: move
-            best-score: score
-        ]
-        either maximizing [alpha: max alpha best-score] [beta: min beta best-score]
-        if alpha >= beta [break]
-    ]
-    reduce [best-move best-score]
-]
-
-
-minimax: function [
-    "Given board, finds best move using minimax"
-    board player count 
-] [
-    _minimax board player count true 0 NINF INF ; maximing depth alpha beta
-]
-}
-
-
 play-square: function [
     "Places player's mark on selected square and checks for winner"
-    square  
+    row col
     /extern board player counter game?
 ] [
-    if all [(valid-square? board player square) (not game?/over?)] [
-        update-board board player counter/count square
+    if all [(valid-square? board player row col) (not game?/over?)] [
+        update-board board player counter/count row col
         either counter/count/1 + counter/count/2 = 64 [
             end-game counter/count
         ] [
@@ -299,17 +199,14 @@ computer-turn: function [
 ] [
     computer-move/enabled?: false
     move: random/only find-valid-squares board player
-    square: get to-word rejoin ["square" move]
-    play-square square
+    play-square move/1 move/2
     wait DELAY 
     if (not game?/over?) and (not previous-move-by-computer?) [computer-move/enabled?: true]
 ]
 
 
-init-ttt: has [
-    init-square
-] [    
-    ttt: compose/deep [ 
+init-ttt: has [row col] [
+    ttt: copy [ 
         title "Othello"
         backdrop white
         pad 5x0
@@ -322,18 +219,16 @@ init-ttt: has [
         space -5x-6
     ]
 
-    repeat square-num 64 [
-        square-set-word: to-set-word rejoin ["square" square-num ":"]
-        init-square: EMPTY
-        if any [(square-num = 29) (square-num = 36)] [init-square: STONE/1]
-        if any [(square-num = 28) (square-num = 37)] [init-square: STONE/2]
-        append ttt compose/deep [
-            (square-set-word) button 82x82 (init-square) extra (square-num) [
-                play-square face
-                previous-move-by-computer?: false  
+    repeat row 8 [
+        repeat col 8 [
+            append ttt compose/deep [
+                button 82x82 extra [(row) (col)] react [face/image: STONE/((board/square/(face/extra/1)/(face/extra/2)) + 1)] [
+                    play-square face/extra/1 face/extra/2
+                    previous-move-by-computer?: false  
+                ]
             ]
         ]
-        if square-num % 8 = 0 [append ttt [return]]
+        append ttt [return]
     ]
 
     append ttt [
@@ -362,7 +257,7 @@ init-ttt: has [
 
 random/seed now/time
 forever [
-    board: copy/deep INIT-BOARD
+    board: make deep-reactor! [square: copy/deep INIT-BOARD]
     player: 1
     counter: make deep-reactor! [count: copy [2 2]]
     dialogue: make reactor! [text: TURN/:player color: PLAYER-COLOR/:player]
