@@ -16,8 +16,6 @@ DELAY: 0.0
 PASS-DELAY: 1.5
 INF: 10
 NINF: -10
-
-; internal representation of empty board
 INIT-BOARD: [[3 3 3 3 3 3 3 3] 
              [3 3 3 3 3 3 3 3]
              [3 3 3 3 3 3 3 3]
@@ -129,7 +127,8 @@ update-board: function [
 
 player-dialogue: function [
     "Updates player display"
-    player
+    player 
+    /extern dialogue
 ] [
     dialogue/color: PLAYER-COLOR/:player
     dialogue/text: rejoin [TURN/:player]
@@ -139,6 +138,7 @@ player-dialogue: function [
 pass-dialogue: function [
     "Forced pass on player's move"
     player
+    /extern dialogue
 ] [
     dialogue/color: PLAYER-COLOR/:player
     dialogue/text: "FORCED PASS"
@@ -149,7 +149,7 @@ pass-dialogue: function [
 end-game: function [
     "Displays end-of-game dialogue"
     count
-    /extern game?
+    /extern dialogue game? computer-move
 ] [
     game?/over?: true
     computer-move/enabled?: false
@@ -195,7 +195,7 @@ play-square: function [
 
 computer-turn: function [
     "Generates computer move"
-    /extern board player game? previous-move-by-computer?
+    /extern board player game? computer-move previous-move-by-computer?
 ] [
     computer-move/enabled?: false
     move: random/only find-valid-squares board player
